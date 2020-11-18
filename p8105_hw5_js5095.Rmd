@@ -4,3 +4,33 @@ author: Jianting Shi
 date: 2020-11-18
 output: github_document
 ---
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(reshape2)
+```
+
+# Problem 2
+
+```{r}
+longit_study = list.files("./Data")
+
+longit_study_df = function(x) {
+  read_df = read_csv(paste0("./Data/", x)) %>% 
+    mutate(arm_ID = str_sub(x, end = 6))
+  read_df
+}
+
+output = purrr::map(longit_study, longit_study_df)
+week_results = bind_rows(output)# %>% 
+ # replace(file_name, ".csv", " ")
+
+
+```
+
+
+```{r}
+output[[1]] = 
+```
+
