@@ -13,24 +13,36 @@ library(reshape2)
 
 # Problem 2
 
+## Create a tidy dataframe containing data from all participants, including the subject ID, arm, and observations over time
+
 ```{r}
+# Create variable to store a list of data
 longit_study = list.files("./Data")
 
+# Create a function to read in lists of data
 longit_study_df = function(x) {
   read_df = read_csv(paste0("./Data/", x)) %>% 
-    mutate(arm_ID = str_sub(x, end = 6))
+    mutate(arm_id = str_sub(x, end = 6))
+    
   read_df
 }
 
+# Iterate over files with the function and save the output in dataframe
 output = purrr::map(longit_study, longit_study_df)
-week_results = bind_rows(output)# %>% 
- # replace(file_name, ".csv", " ")
+study_results = bind_rows(output) 
 
-
+# Tidy the data
+longitstudy = 
+  study_results %>% 
+  pivot_longer(week_1:week_8,
+               names_to = "week", 
+               values_to = "observation") %>% 
+  mutate(week = str_replace(week, 'week_', '')) %>% 
+  mutate(week = as.numeric(week)) %>% 
+  separate(arm_id, into = c("arm", "id"), sep = "_")
 ```
 
+A list of csv files have been read and stored into a dataframe, which `r colnames(longitstudy)` variables, containing `r nrow(longitstudy)` rows and `r ncol(longitstudy)` columns.
 
-```{r}
-output[[1]] = 
-```
+
 
