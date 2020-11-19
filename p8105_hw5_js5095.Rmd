@@ -7,8 +7,6 @@ output: github_document
 
 ```{r}
 library(tidyverse)
-library(rvest)
-library(reshape2)
 ```
 
 # Problem 2
