@@ -42,7 +42,128 @@ longitstudy =
   separate(arm_id, into = c("arm", "id"), sep = "_")
 ```
 
-A list of csv files have been read and stored into a dataframe, which `r colnames(longitstudy)` variables, containing `r nrow(longitstudy)` rows and `r ncol(longitstudy)` columns.
+A list of csv files have been read and stored into a dataframe, which has the following variables: `r colnames(longitstudy)`, containing `r nrow(longitstudy)` rows and `r ncol(longitstudy)` columns.
+
+## Make a spaghetti plot showing observations on each subject over time, and comment on differences between groups.
+
+```{r}
+ggplot(longitstudy, aes(x = week, y = observation, color = id)) +
+  facet_grid(~as.factor(arm)) +
+  geom_line() +
+  labs(
+    title = "The Difference Between Control Group and Experiment Gruop",
+    x = "Week",
+    y = "Observation"
+  ) +
+  viridis::scale_color_viridis(
+    discrete = TRUE
+  ) + 
+  theme(legend.position = "bottom")
+```
 
 
+# Problem 3
+
+## Set up 3 functions to simulate data and perform t-tests
+
+```{r}
+sim_data = function(size = 5000, n = 30, mu = 0, s = 5){
+  data = vector("list", size)
+  for(i in 1:size){
+    data[[i]] = rnorm(n, mean = mu, sd = s)
+  }
+  data
+}
+
+t_test_1sample = function(x, mu=0){
+  output = t.test(x, mu = mu) %>%
+    broom::tidy() %>%
+    select(estimate, p.value) %>%
+    as.numeric()
+  
+  tbl = tibble(
+    mu_h = output[1],
+    p_val = output[2]
+  )
+  tbl
+}
+
+t_test_1sample_batch = function(x, size = 5000, mu=0){
+  test_data = vector("list", size)
+  for(i in 1:size){
+    test_data[[i]] = t_test_1sample(x[[i]], mu)
+  }
+  test_data
+}
+```
+
+## Generate 7 lists with μ={0,1,2,3,4,5,6}. Each list contains 5000 datasets of n=30, with fixed {\sigma} = 5.
+
+```{r}
+all_sim_data = vector("list", 7)
+all_test_data = vector("list",7)
+
+### Test mu = 0
+for(i in 0:6){
+  all_sim_data[[i+1]] = sim_data(mu=i)
+  all_test_data2[[i+1]] = t_test_1sample_batch3(all_sim_data[[i+1]])
+  all_test_data2[[i+1]] = bind_rows(all_test_data2[[i+1]])
+}
+```
+
+## Plot 1. the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ on the x axis.
+
+```{r}
+test_rejection = tibble()
+for(i in 0:6){
+  temp_rej = tibble(
+    mu = i,
+    prop_rej = sum(all_test_data2[[i+1]][2]<0.05)/5000
+  ) 
+  test_rejection = rbind(test_rejection, temp_rej)
+}
+
+test_rejection %>% ggplot(aes(x=mu, y = prop_rej)) + geom_bar(stat = "identity")
+```
+
+
+## Plot 2. the average estimate of μ̂  on the y axis and the true value of μ on the x axis.
+
+```{r}
+avg_mu_hat = tibble()
+for(i in 0:6){
+  mean = all_test_data2[[i+1]] %>%
+    select(mu_h) %>%
+    summarize(mean = mean(mu_h))
+  
+  temp_mu_hat = tibble(
+    mu = i,
+    avg_mu_hat = as.numeric(mean)
+  ) 
+  avg_mu_hat = rbind(avg_mu_hat, temp_mu_hat)
+}
+
+avg_mu_hat %>% ggplot(aes(x = mu, y = avg_mu_hat)) + geom_point()
+```
+
+## Plot 3. the average estimate of μ̂  only in samples for which the null was rejected on the y axis and the true value of μ on the x axis.
+
+```{r}
+avg_mu_hat_rej = tibble()
+for(i in 0:6){
+  mean_rej = all_test_data2[[i+1]] %>%
+    filter(p_val < 0.05) %>%
+    select(mu_h) %>%
+    summarize(mean = mean(mu_h))
+  
+  temp_mu_hat = tibble(
+    mu = i,
+    avg_mu_hat = as.numeric(mean_rej)
+  )
+  avg_mu_hat_rej = rbind(avg_mu_hat_rej, temp_mu_hat)
+  
+}
+
+avg_mu_hat_rej %>% ggplot(aes(x = mu, y = avg_mu_hat)) + geom_point()
+```
 
